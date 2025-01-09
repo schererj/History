@@ -12,6 +12,7 @@ username = st.secrets["username"]
 password = st.secrets["password"]
 
 st.set_page_config(layout="wide")
+
 # CSS für Textumbruch
 st.markdown("""
     <style>
@@ -22,10 +23,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-
 # Streamlit App
 st.title("Lebedew | Chatbot | Fragen und Antworten")
-
 
 # Sending GET Request with Basic Authentication
 response = requests.get(base_url, auth=(username, password))
@@ -36,10 +35,10 @@ if response.status_code == 200:
     
     if 'data' in data:
         ids = [item['id'] for item in data['data']]
-        results = []
-
+        
         @st.cache_data
         def load_data(ids, username, password):
+            results = []
             for id_value in ids:
                 details_response = requests.get(details_url.format(id=id_value), auth=(username, password))
 
@@ -55,7 +54,10 @@ if response.status_code == 200:
                         
                         # Format timestamp to TT.MM.JJJJ HH:MM:SS
                         if timestamp:
-                            date_time = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d.%m.%Y %H:%M:%S")
+                            try:
+                                date_time = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d.%m.%Y %H:%M:%S")
+                            except ValueError:
+                                date_time = None
                         else:
                             date_time = None
 
@@ -66,15 +68,20 @@ if response.status_code == 200:
                                 "Frage": question,
                                 "Antwort": output
                             })
-            return df
+            # Rückgabe des Ergebnisses als DataFrame
+            return results
 
-        # Create DataFrame
-        df = pd.DataFrame(results)
+        # Laden der Daten
+        results = load_data(ids, username, password)
 
-        df.columns = ["Datum und Uhrzeit", "Hotel", "Frage", "Antwort"]
-
-        st.dataframe(df, use_container_width=True)
-
+        # Prüfen, ob Ergebnisse vorhanden sind
+        if results:
+            # DataFrame erstellen
+            df = pd.DataFrame(results)
+            df.columns = ["Datum und Uhrzeit", "Hotel", "Frage", "Antwort"]
+            st.dataframe(df, use_container_width=True)
+        else:
+            st.warning("Keine Daten gefunden. Bitte überprüfen Sie die API-Daten.")
     else:
         st.error("Keine Daten gefunden.")
 else:
