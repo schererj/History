@@ -24,7 +24,7 @@ st.markdown("""
 
 
 # Streamlit App
-st.title("TONI Park | Chatbot | Fragen und Antworten")
+st.title("Lebedew | Chatbot | Fragen und Antworten")
 
 
 # Sending GET Request with Basic Authentication
@@ -49,6 +49,7 @@ if response.status_code == 200:
                     question = trace.get("input", {}).get("question")
                     output = trace.get("output")
                     timestamp = trace.get("timestamp")  # Full timestamp
+                    release = trace.get("release")
                     
                     # Format timestamp to TT.MM.JJJJ HH:MM:SS
                     if timestamp:
@@ -59,13 +60,14 @@ if response.status_code == 200:
                     if question and output:
                         results.append({
                             "Datum und Uhrzeit": date_time,
+                            "Hotel": release,
                             "Frage": question,
                             "Antwort": output
                         })
 
         # Create DataFrame
         df = pd.DataFrame(results)
-        df.columns = ["Datum und Uhrzeit", "Frage", "Antwort"]
+        df.columns = ["Datum und Uhrzeit", "Hotel", "Frage", "Antwort"]
 
         st.dataframe(df, use_container_width=True)
 
