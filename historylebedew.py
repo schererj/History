@@ -38,35 +38,39 @@ if response.status_code == 200:
         ids = [item['id'] for item in data['data']]
         results = []
 
-        for id_value in ids:
-            details_response = requests.get(details_url.format(id=id_value), auth=(username, password))
+        @st.cache_data
+        def load_data(ids):
+            for id_value in ids:
+                details_response = requests.get(details_url.format(id=id_value), auth=(username, password))
 
-            if details_response.status_code == 200:
-                details_data = details_response.json()
-                traces = details_data.get("traces", [])
-                
-                for trace in traces:
-                    question = trace.get("input", {}).get("question")
-                    output = trace.get("output")
-                    timestamp = trace.get("timestamp")  # Full timestamp
-                    release = trace.get("release")
+                if details_response.status_code == 200:
+                    details_data = details_response.json()
+                    traces = details_data.get("traces", [])
                     
-                    # Format timestamp to TT.MM.JJJJ HH:MM:SS
-                    if timestamp:
-                        date_time = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d.%m.%Y %H:%M:%S")
-                    else:
-                        date_time = None
+                    for trace in traces:
+                        question = trace.get("input", {}).get("question")
+                        output = trace.get("output")
+                        timestamp = trace.get("timestamp")  # Full timestamp
+                        release = trace.get("release")
+                        
+                        # Format timestamp to TT.MM.JJJJ HH:MM:SS
+                        if timestamp:
+                            date_time = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d.%m.%Y %H:%M:%S")
+                        else:
+                            date_time = None
 
-                    if question and output:
-                        results.append({
-                            "Datum und Uhrzeit": date_time,
-                            "Hotel": release,
-                            "Frage": question,
-                            "Antwort": output
-                        })
+                        if question and output:
+                            results.append({
+                                "Datum und Uhrzeit": date_time,
+                                "Hotel": release,
+                                "Frage": question,
+                                "Antwort": output
+                            })
+            return df
 
         # Create DataFrame
         df = pd.DataFrame(results)
+
         df.columns = ["Datum und Uhrzeit", "Hotel", "Frage", "Antwort"]
 
         st.dataframe(df, use_container_width=True)
