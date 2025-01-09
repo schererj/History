@@ -26,6 +26,8 @@ st.markdown("""
 # Streamlit App
 st.title("TONI Park | Chatbot | Fragen und Antworten")
 
+pd.set_option('display.max_colwidth', None)
+
 
 # Sending GET Request with Basic Authentication
 response = requests.get(base_url, auth=(username, password))
