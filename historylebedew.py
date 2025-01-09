@@ -39,7 +39,7 @@ if response.status_code == 200:
         results = []
 
         @st.cache_data
-        def load_data(ids):
+        def load_data(ids, username, password):
             for id_value in ids:
                 details_response = requests.get(details_url.format(id=id_value), auth=(username, password))
 
