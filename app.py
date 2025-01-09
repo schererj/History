@@ -26,31 +26,26 @@ st.markdown("""
 # Streamlit App
 st.title("TONI Park | Chatbot | Fragen und Antworten")
 
-pd.set_option('display.max_colwidth', None)
+# Sending GET Request with Basic Authentication
+response = requests.get(base_url, auth=(username, password))
 
-@st.cache_data
-def load_data(base_url, details_url, username, password):
-    """
-    Abrufen und Verarbeiten der Daten von der API.
-    """
-    # Ergebnisse werden in einer Liste gespeichert
-    results = []
-
-    # Abrufen der Session-IDs
-    response = requests.get(base_url, auth=(username, password))
-    if response.status_code == 200:
-        data = response.json()
-        if 'data' in data:
-            ids = [item['id'] for item in data['data']]
-            
-            # Abrufen der Details für jede Session-ID
+if response.status_code == 200:
+    # Parse JSON response
+    data = response.json()
+    
+    if 'data' in data:
+        ids = [item['id'] for item in data['data']]
+        
+        @st.cache_data
+        def load_data(ids, username, password):
+            results = []
             for id_value in ids:
                 details_response = requests.get(details_url.format(id=id_value), auth=(username, password))
+
                 if details_response.status_code == 200:
                     details_data = details_response.json()
                     traces = details_data.get("traces", [])
                     
-                    # Verarbeitung der Traces
                     for trace in traces:
                         question = trace.get("input", {}).get("question")
                         output = trace.get("output")
@@ -65,27 +60,27 @@ def load_data(base_url, details_url, username, password):
                         else:
                             date_time = None
 
-                        # Speichern der relevanten Daten
                         if question and output:
                             results.append({
                                 "Datum und Uhrzeit": date_time,
                                 "Frage": question,
                                 "Antwort": output
                             })
+            # Rückgabe des Ergebnisses als DataFrame
+            return results
+
+        # Laden der Daten
+        results = load_data(ids, username, password)
+
+        # Prüfen, ob Ergebnisse vorhanden sind
+        if results:
+            # DataFrame erstellen
+            df = pd.DataFrame(results)
+            df.columns = ["Datum und Uhrzeit", "Hotel", "Frage", "Antwort"]
+            st.dataframe(df, use_container_width=True)
+        else:
+            st.warning("Keine Daten gefunden. Bitte überprüfen Sie die API-Daten.")
     else:
-        st.error(f"Fehler bei der API-Anfrage: {response.status_code}")
-    
-    # Rückgabe der Ergebnisse
-    return results
-
-# Daten laden
-results = load_data(base_url, details_url, username, password)
-
-# Ergebnisse anzeigen
-if results:
-    # DataFrame erstellen
-    df = pd.DataFrame(results)
-    df.columns = ["Datum und Uhrzeit", "Frage", "Antwort"]
-    st.dataframe(df, use_container_width=True)
+        st.error("Keine Daten gefunden.")
 else:
-    st.warning("Keine Daten gefunden.")
+    st.error(f"Fehler bei der API-Anfrage: {response.status_code}")
