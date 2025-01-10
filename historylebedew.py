@@ -36,7 +36,6 @@ if response.status_code == 200:
     if 'data' in data:
         ids = [item['id'] for item in data['data']]
         
-        @st.cache_data
         def load_data(ids, username, password):
             results = []
             for id_value in ids:
